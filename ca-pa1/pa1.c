@@ -229,53 +229,26 @@ int decode(const char* const src, const int srclen, char* const dst, const int d
     for (int i = 0; i < srclen; i++) {
         for (int j = 7; j >= 0; j--) {
             int bit = (src[i] >> j) & 1;
-            // checking zero
-            if (check_case == 0) {
-                if (run_length >= 3) {
-                    // write zero to memory
-                    for (int i = count_case; i > 0; i--) {
-                        if (current_dst_bit >= 7) {
-                            *(dst+current_dst_length++) = (temp_dst_bit << 1) | 0;
-                            temp_dst_bit = 0;
-                            current_dst_bit = 0;
-                        } else {
-                            current_dst_bit++;
-                            temp_dst_bit = (temp_dst_bit << 1) | 0;
-                        }
+            if (run_length >= 3) {
+                // write zero to memory
+                for (int i = count_case; i > 0; i--) {
+                    if (current_dst_bit >= 7) {
+                        *(dst+current_dst_length++) = (temp_dst_bit << 1) | check_case;
+                        temp_dst_bit = 0;
+                        current_dst_bit = 0;
+                    } else {
+                        current_dst_bit++;
+                        temp_dst_bit = (temp_dst_bit << 1) | check_case;
                     }
-                    count_case = bit;
-                    check_case = 1;
-                    run_length = 1;
                 }
-                // run length < 3
-                else { 
-                    run_length++;
-                    count_case = (count_case << 1) | bit;
-                }
+                count_case = bit;
+                check_case = check_case == 1 ? 0 : 1;
+                run_length = 1;
             }
-            // checking one
-            else {
-                if (run_length >= 3) {
-                    // write one to memory
-                    for (int i = count_case; i > 0; i--) {
-                        if (current_dst_bit >= 7) {
-                            *(dst+current_dst_length++) = (temp_dst_bit << 1) | 1;
-                            temp_dst_bit = 0;
-                            current_dst_bit = 0;
-                        } else {
-                            current_dst_bit++;
-                            temp_dst_bit = (temp_dst_bit << 1) | 1;
-                        }
-                    }
-                    count_case = bit;
-                    check_case = 0;
-                    run_length = 1;
-                }
-                // run length < 3
-                else { 
-                    run_length++;
-                    count_case = (count_case << 1) | bit;
-                }
+            // run length < 3
+            else { 
+                run_length++;
+                count_case = (count_case << 1) | bit;
             }
         }
     }
@@ -304,4 +277,3 @@ int decode(const char* const src, const int srclen, char* const dst, const int d
     // return the length of the output
     return current_dst_length;
 }
-
