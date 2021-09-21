@@ -15,8 +15,6 @@
 //
 //---------------------------------------------------------------
 
-#include <stdio.h>
-#include <string.h>
 
 /* TODO: Implement this function */
 int encode(const char* const src, const int srclen, char* const dst, const int dstlen)
