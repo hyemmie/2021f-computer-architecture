@@ -43,13 +43,11 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
                         // write number of zero to memory
                         for (int i = 2; i >= 0; i--) {
                             int temp = (zero_count >> i) & 1;
-                            if (current_dst_bit >= 7) {        
-                                *(dst+current_dst_length) = (temp_dst_bit << 1) | temp;
+                            if (current_dst_bit >= 7) {
                                 if (current_dst_length >= dstlen) {
                                     return -1;
-                                } else {
-                                    current_dst_length++;
-                                }
+                                }      
+                                *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
                                 temp_dst_bit = 0;
                                 current_dst_bit = 0;
                             } else {
@@ -72,12 +70,10 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
                         int temp = (zero_count >> i) & 1;
                             if (current_dst_bit >= 7) {
                                 current_dst_bit = 0;
-                                *(dst+current_dst_length) = (temp_dst_bit << 1) | temp;
                                 if (current_dst_length >= dstlen) {
                                     return -1;
-                                } else {
-                                    current_dst_length++;
-                                }
+                                } 
+                                *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
                                 temp_dst_bit = 0;
                             } else {
                                 current_dst_bit++;
@@ -101,12 +97,10 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
                             int temp = (one_count >> i) & 1;
                             if (current_dst_bit >= 7) {
                                 current_dst_bit = 0;
-                                *(dst+current_dst_length) = (temp_dst_bit << 1) | temp;
                                 if (current_dst_length >= dstlen) {
                                     return -1;
-                                } else {
-                                    current_dst_length++;
-                                }
+                                } 
+                                *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
                                 temp_dst_bit = 0;
                             } else {
                                 current_dst_bit++;
@@ -128,12 +122,10 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
                         int temp = (one_count >> i) & 1;
                         if (current_dst_bit >= 7) {
                             current_dst_bit = 0;
-                            *(dst+current_dst_length) = (temp_dst_bit << 1) | temp;
                             if (current_dst_length >= dstlen) {
                                 return -1;
-                            } else {
-                                current_dst_length++;
-                            }
+                            } 
+                            *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
                             temp_dst_bit = 0;
                         } else {
                             current_dst_bit++;
@@ -154,12 +146,10 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
             int temp = (zero_count >> i) & 1;
             if (current_dst_bit >= 7) {
                 current_dst_bit = 0;
-                *(dst+current_dst_length) = (temp_dst_bit << 1) | temp;
                 if (current_dst_length >= dstlen) {
                     return -1;
-                } else {
-                    current_dst_length++;
-                }
+                } 
+                *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
                 temp_dst_bit = 0;
             } else {
                 current_dst_bit++;
@@ -168,12 +158,10 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
         }
         // add padding
         if (current_dst_bit > 0) {
-            *(dst+current_dst_length) = temp_dst_bit << (8 - current_dst_bit);
             if (current_dst_length >= dstlen) {
                 return -1;
-            } else {
-                current_dst_length++;
-            }
+            } 
+            *(dst+current_dst_length++) = temp_dst_bit << (8 - current_dst_bit);
         }
     }
     // add remaining counted one
@@ -183,12 +171,10 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
             int temp = (one_count >> i) & 1;
             if (current_dst_bit >= 7) {
                 current_dst_bit = 0;
-                *(dst+current_dst_length) = (temp_dst_bit << 1) | temp;
                 if (current_dst_length >= dstlen) {
                     return -1;
-                } else {
-                    current_dst_length++;
-                }
+                } 
+                *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
                 temp_dst_bit = 0;
             } else {
                 current_dst_bit++;
@@ -197,12 +183,10 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
         }
         // add padding
         if (current_dst_bit > 0) {
-            *(dst+current_dst_length) = temp_dst_bit << (8 - current_dst_bit);
             if (current_dst_length >= dstlen) {
                 return -1;
-            } else {
-                current_dst_length++;
-            }
+            } 
+            *(dst+current_dst_length++) = temp_dst_bit << (8 - current_dst_bit);
         }    
     }
 
@@ -219,7 +203,7 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
 int decode(const char* const src, const int srclen, char* const dst, const int dstlen)
 {
     int check_case = 0;
-    int count_case = 0;
+    int case_count = 0;
     int run_length = 0;
     int current_dst_length = 0;
     int current_dst_bit = 0;
@@ -230,9 +214,12 @@ int decode(const char* const src, const int srclen, char* const dst, const int d
         for (int j = 7; j >= 0; j--) {
             int bit = (src[i] >> j) & 1;
             if (run_length >= 3) {
-                // write zero to memory
-                for (int i = count_case; i > 0; i--) {
+                // write check_case to memory
+                for (int i = case_count; i > 0; i--) {
                     if (current_dst_bit >= 7) {
+                        if (current_dst_length >= dstlen) {
+                            return -1;
+                        } 
                         *(dst+current_dst_length++) = (temp_dst_bit << 1) | check_case;
                         temp_dst_bit = 0;
                         current_dst_bit = 0;
@@ -241,21 +228,24 @@ int decode(const char* const src, const int srclen, char* const dst, const int d
                         temp_dst_bit = (temp_dst_bit << 1) | check_case;
                     }
                 }
-                count_case = bit;
+                case_count = bit;
                 check_case = check_case == 1 ? 0 : 1;
                 run_length = 1;
             }
             // run length < 3
             else { 
                 run_length++;
-                count_case = (count_case << 1) | bit;
+                case_count = (case_count << 1) | bit;
             }
         }
     }
 
-    if (count_case > 0) {
-        for (int i = count_case; i > 0; i--) {
+    if (case_count > 0) {
+        for (int i = case_count; i > 0; i--) {
             if (current_dst_bit >= 7) {
+                if (current_dst_length >= dstlen) {
+                    return -1;
+                } 
                 *(dst+current_dst_length++) = (temp_dst_bit << 1) | check_case;
                 temp_dst_bit = 0;
                 current_dst_bit = 0;
@@ -265,13 +255,11 @@ int decode(const char* const src, const int srclen, char* const dst, const int d
             }
         }
         if (temp_dst_bit > 0) {
+            if (current_dst_length >= dstlen) {
+                return -1;
+            } 
             *(dst+current_dst_length++) = temp_dst_bit;
         }
-    }
-
-    // output is bigger than dstlen
-    if (current_dst_length > dstlen) {
-        return -1;
     }
 
     // return the length of the output
