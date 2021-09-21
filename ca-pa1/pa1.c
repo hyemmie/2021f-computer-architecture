@@ -15,8 +15,6 @@
 //
 //---------------------------------------------------------------
 
-#include <stdio.h>
-#include <string.h>
 
 /* TODO: Implement this function */
 int encode(const char* const src, const int srclen, char* const dst, const int dstlen)
@@ -27,133 +25,151 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
     int find_case = 0;
     int current_dst_length = 0;
     int current_dst_bit = 0;
+    char temp_dst_bit = 0;
 
     if (srclen == 0) return 0;
     for (int i = 0; i < srclen; i++) {
         for (int j = 7; j >= 0; j--) {
             int bit = (src[i] >> j) & 1;
+            // counting zero
             if (find_case == 0) {
+                // encounter zero
                 if (bit == 0) {
+                    // add 7th zero to 6 zeros (run length == 7)
                     if (zero_count >= 6) {
-                        // TODO : write current zero count
                         zero_count++;
-                        for (int i = 0; i < 3; i++) {
+                        // write number of zero to memory
+                        for (int i = 2; i >= 0; i--) {
                             int temp = (zero_count >> i) & 1;
                             if (current_dst_bit >= 7) {
+                                *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
+                                temp_dst_bit = 0;
                                 current_dst_bit = 0;
-                                current_dst_length++;
-                                *(dst+(current_dst_length*8)+current_dst_bit) = temp;
                             } else {
                                 current_dst_bit++;
-                                *(dst+(current_dst_length*8)+current_dst_bit) = temp;
+                                temp_dst_bit = (temp_dst_bit << 1) | temp;
                             }
                         }
-                        // printf("zero : %d\n", zero_count);
                         zero_count = 0;
                         find_case = 1;
-                        // continue;
-                    } else { 
+                    }
+                    // run length < 7
+                    else { 
                         zero_count++; 
-                        // continue;
                     }
-                } else {
-                    // TODO: write current zero count
-                    for (int i = 0; i < 3; i++) {
+                }
+                // encounter one
+                else {
+                    // write number of zero to memory
+                    for (int i = 2; i >= 0; i--) {
                         int temp = (zero_count >> i) & 1;
-                        if (current_dst_bit >= 7) {
-                            current_dst_bit = 0;
-                            current_dst_length++;
-                            *(dst+(current_dst_length*8)+current_dst_bit) = temp;
-                        } else {
-                            current_dst_bit++;
-                            *(dst+(current_dst_length*8)+current_dst_bit) = temp;
-                        }
+                            if (current_dst_bit >= 7) {
+                                current_dst_bit = 0;
+                                *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
+                                temp_dst_bit = 0;
+                            } else {
+                                current_dst_bit++;
+                                temp_dst_bit = (temp_dst_bit << 1) | temp;
+                            }
                     }
-                    // printf("zero : %d\n", zero_count);
                     zero_count = 0;
                     find_case = 1;
                     one_count++;
-                    // continue;
                 }
             }
+            // counting one
             else {
+                // encounter one
                 if (bit == 1) {
+                    // add 7th one to 6 one(run length == 7)
                     if (one_count >= 6) {
                         one_count++;
-                        // TODO : write current one count
-                        for (int i = 0; i < 3; i++) {
+                        // write number of one to memory
+                        for (int i = 2; i >= 0; i--) {
                             int temp = (one_count >> i) & 1;
                             if (current_dst_bit >= 7) {
                                 current_dst_bit = 0;
-                                current_dst_length++;
-                                *(dst+(current_dst_length*8)+current_dst_bit) = temp;
+                                *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
+                                temp_dst_bit = 0;
                             } else {
                                 current_dst_bit++;
-                                *(dst+(current_dst_length*8)+current_dst_bit) = temp;
+                                temp_dst_bit = (temp_dst_bit << 1) | temp;
                             }
-                    }
-                        // printf("one : %d\n", one_count);
+                        }
                         one_count = 0;
                         find_case = 0;
-                        // continue;
-                    } else { 
-                        one_count++;
-                        // continue;
                     }
-                } else {
-                    // TODO : write current one count
-                    for (int i = 0; i < 3; i++) {
+                    // run length < 7
+                    else { 
+                        one_count++;
+                    }
+                }
+                // encounter zero
+                else {
+                    // write number of one to memory
+                    for (int i = 2; i >= 0; i--) {
                         int temp = (one_count >> i) & 1;
                         if (current_dst_bit >= 7) {
                             current_dst_bit = 0;
-                            current_dst_length++;
-                            *(dst+(current_dst_length*8)+current_dst_bit) = temp;
+                            *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
+                            temp_dst_bit = 0;
                         } else {
                             current_dst_bit++;
-                            *(dst+(current_dst_length*8)+current_dst_bit) = temp;
+                            temp_dst_bit = (temp_dst_bit << 1) | temp;
                         }
                     }
-                    // printf("one : %d\n", one_count);
                     one_count = 0;
                     find_case = 0;
                     zero_count++;
-                    // continue;
                 }
             }
         }
     }
+    // add remaining counted zero
     if (find_case == 0) {
-        // TODO :write final zero count
-        // printf("zero : %d\n", zero_count);
-        for (int i = 0; i < 3; i++) {
+        // write number of zero to memory
+        for (int i = 2; i >= 0; i--) {
             int temp = (zero_count >> i) & 1;
             if (current_dst_bit >= 7) {
                 current_dst_bit = 0;
-                current_dst_length++;
-                *(dst+(current_dst_length*8)+current_dst_bit) = temp;
+                *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
+                temp_dst_bit = 0;
             } else {
                 current_dst_bit++;
-                *(dst+(current_dst_length*8)+current_dst_bit) = temp;
+                temp_dst_bit = (temp_dst_bit << 1) | temp;
             }
         }
-        // TODO : add padding
-    } else {
-        // TODO : write final one count
-        // printf("one : %d\n", one_count);
-        for (int i = 0; i < 3; i++) {
+        // add padding
+        if (current_dst_bit > 0) {
+            *(dst+current_dst_length++) = temp_dst_bit << (8 - current_dst_bit);
+        }
+    }
+    // add remaining counted one
+    else {
+        // write number of one to memory
+        for (int i = 2; i >= 0; i--) {
             int temp = (one_count >> i) & 1;
             if (current_dst_bit >= 7) {
                 current_dst_bit = 0;
-                current_dst_length++;
-                *(dst+(current_dst_length*8)+current_dst_bit) = temp;
+                *(dst+current_dst_length++) = (temp_dst_bit << 1) | temp;
+                temp_dst_bit = 0;
             } else {
                 current_dst_bit++;
-                *(dst+(current_dst_length*8)+current_dst_bit) = temp;
+                temp_dst_bit = (temp_dst_bit << 1) | temp;
             }
         }
-        // TODO : add padding
+        // add padding
+        if (current_dst_bit > 0) {
+            *(dst+current_dst_length++) = temp_dst_bit << (8 - current_dst_bit);
+        }    
     }
 
+    // output is bigger than dstlen
+    if (current_dst_length > dstlen) {
+        return -1;
+    }
+
+    // return the length of the output
     return current_dst_length;
 }
 
