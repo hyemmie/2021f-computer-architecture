@@ -104,11 +104,6 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
         }
     }
 
-    // output is bigger than dstlen
-    if (current_dst_length > dstlen) {
-        return -1;
-    }
-
     // return the length of the output
     return current_dst_length;
 }
