@@ -29,7 +29,7 @@ int encode(const char* const src, const int srclen, char* const dst, const int d
     if (srclen == 0) return 0;
     for (int i = 0; i < srclen; i++) {
         for (int j = 7; j >= 0; j--) {
-            int bit = (src[i] >> j) & 1;
+            int bit = (*(src+i) >> j) & 1;
             // counting current case
             if (find_case == bit) {
                 // run length == 7
@@ -121,7 +121,7 @@ int decode(const char* const src, const int srclen, char* const dst, const int d
     if (srclen == 0) return 0;
     for (int i = 0; i < srclen; i++) {
         for (int j = 7; j >= 0; j--) {
-            int bit = (src[i] >> j) & 1;
+            int bit = (*(src+i) >> j) & 1;
             if (run_length >= 3) {
                 // write check_case to memory
                 for (int i = case_count; i > 0; i--) {
