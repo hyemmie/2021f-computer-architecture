@@ -2,6 +2,7 @@
 *.o
 *.swp
 pa1
+pa2
 .DS_Store
 /.idea
 .vscode
