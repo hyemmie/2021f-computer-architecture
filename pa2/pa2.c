@@ -16,18 +16,19 @@
 //---------------------------------------------------------------
 
 #include "pa2.h"
+// #include <stdio.h>
 
 /* Convert 32-bit signed integer to 10-bit floating point */
 fp10 int_fp10(int n)
 {
 	fp10 ans = 0;
 	if (n == 0) return ans; // 0
-	// if () // NaN
 	if (n >= 0xFC00) return (ans + (31 << 4)); // Inf
 	// negative sign
 	if (n < 0) {
-		ans += (0xFFFFFFFF << 9);
+		ans += (0xFFFF << 9);
 		n *= (-1);
+		// if (n >= 0xFC00) return (ans + (31 << 4)); // -Inf
 	}
 	int exp = 0;
 	int temp_n = n;
@@ -48,7 +49,11 @@ fp10 int_fp10(int n)
 	if (frac > 15) {
 		if (++exp > 15) return (ans + (31 << 4));
 		frac = 0;
-	} 
+	}
+
+	// if (((ans & (0xFFFF << 9)) > 0) && (exp == 0) && (frac == 0)) {
+	// 	return 0;
+	// }
 	
 	return ans + ((exp + 15) << 4) + frac;
 }
@@ -56,15 +61,16 @@ fp10 int_fp10(int n)
 /* Convert 10-bit floating point to 32-bit signed integer */
 int fp10_int(fp10 x)
 {
-	/* TODO */
+	if ((x == 0) || ((x - (0xFFFF << 9)) == 0)) return 0;
+	int ans = (x >> 15) ? -1 : 1;
+  x -= (0xFFFF << 9);
+	int exp = ((x & (31 << 4)) >> 4) - 15;
+	int frac = x & 15;
+	if (exp <= 0) return 0;
+	if (exp > 15) return 0x80000000;
+	if (exp < 4) return ans * ((frac + 16) >> (4 - exp));
+  return ans * ((frac + 16)<< (exp - 4));
 
-
-
-
-
-
-
-	return 1;
 }
 
 /* Convert 32-bit single-precision floating point to 10-bit floating point */
