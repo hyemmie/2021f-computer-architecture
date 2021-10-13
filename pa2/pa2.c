@@ -16,7 +16,6 @@
 //---------------------------------------------------------------
 
 #include "pa2.h"
-// #include <stdio.h>
 
 /* Convert 32-bit signed integer to 10-bit floating point */
 fp10 int_fp10(int n)
@@ -34,7 +33,7 @@ fp10 int_fp10(int n)
 	int temp_n = n;
 	while (temp_n > 1) {
 		temp_n >>= 1;
-		if (++exp > 15) return (ans + (31 << 4));
+		if (++exp > 15) return (ans + (31 << 4)); // Inf
 	}
 	int frac = (exp < 5) ? ((n - (1 << exp)) << (4 - exp)) : (((n - (1 << exp)) >> (exp - 4)));
 	if (exp >= 5) {
