@@ -26,6 +26,9 @@ fp10 int_fp10(int n)
 	// negative sign
 	if (n < 0) {
 		ans += (0xFFFF << 9);
+		if (n == -0x80000000) {
+			return (ans + (31 << 4));
+		}
 		n *= (-1);
 		if (n >= 0xFC00) return (ans + (31 << 4)); // -Inf
 	}
@@ -79,21 +82,27 @@ fp10 float_fp10(float f)
 		float f;
 	} uni;
 	uni.f = f;
+	// negative sign 
 	if (uni.i & (1 << 31))
 	{
 			ans += (0xFFFF << 9);
 			uni.i -= (1 << 31);
 	}
+	// get exp and frac
 	int exp = ((uni.i & 0x7f800000) >> 23) - 127;
 	int frac = (uni.i & (15 << 19)) >> 19;
 	if (uni.i > 0x7f800000) return ans + (31 << 4) + 1; // NaN
-	if (exp > 15) return ans + (31 << 4); // Inf
-	if (exp < -19) return ans; // underflow
+	if (exp > 15) return ans + (31 << 4); // Overflow -> Inf
+	if (exp < -19) return ans; // Underflow
+
+	// find l, r, s for normalized value's round-to-even
 	int l, r, s;
 	l = (uni.i >> 19) & 1;
 	r = (uni.i >> 18) & 1;
 	s = (uni.i) & (0x3ff);
-	// denormalized
+
+
+  // find l, r, s for denormalized value's round-to-even
 	if (exp < -14) {
 		denormalized = 1;
 		int full_frac = ((uni.i & (15 << 19)) + (1 << 23));
@@ -103,22 +112,27 @@ fp10 float_fp10(float f)
 		s = (full_frac) & ((1 << (19 + -15 - exp)) - 1);
 	}
 
+	// round-to-even
 	if ((r > 0) && (s > 0) || (s == 0 && l > 0)) {
 		frac += 1;
 	}
+	// frac -> exp up
 	if (frac > 15) {
+		// denormalized to normalized round-up case
 		if (exp == -15) {
 			denormalized = 0;
 		}
+		// default round-up 
 		if (++exp > 15) return (ans + (31 << 4));
 		frac = 0;
 	}
+
+
 	if (denormalized) {
 		ans += frac;
 	} else {
 		ans += ((exp + 15) << 4) + frac;
 	}
-
 	return ans;
 }
 
