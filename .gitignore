@@ -6,3 +6,5 @@ pa2
 .DS_Store
 /.idea
 .vscode
+bmpconv
+link.ld
