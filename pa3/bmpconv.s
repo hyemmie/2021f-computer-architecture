@@ -115,26 +115,34 @@ height_loop:
 			beq x0, x0, prepare_outer
 			# t3 써도됨
 		
-		# 8보다 큰 t1에 대해서 t2가 0이면, 즉 i가 8의 배수이면 i = i+1하고 width_loop로
-		divisible_8: 
-			andi t2, t1, 0x007
-			# 8의 배수가 아니면 넘어감
-			bne t2, x0, prepare2_outer
-			# 8의 배수이면 i = i+1하고 width_loop로 
+		# t2가 0이면, 즉 i+1이 9의 배수이면 i = i+1하고 width_loop로
+		# i+1이 9의 배수이면 i = i+1
+		divisible_9: 
+			addi t2, t2, -9
+			# 9의 배수이면
+			beq t2, x0, divided_9
+			# 9의 배수가 아니면 계속 진행
+			blt t2, x0, prepare2_outer
+			# 계산중이면 돌아감
+			beq x0, x0, divisible_9
+
+		divided_9: 
+			# i = i+1
 			addi t1, t1, 1
 			# width_loop로 돌아가기 전에 t2 = 3(w+1) / 4 계산
 			addi t2, a2, 1
 			slli t3, t2, 1
 			add t2, t3, t2
 			srli t2, t2, 2
-			# addi sp, sp, 4
+			# 들어가있는 d값 빼줌
+			addi sp, sp, 4
 			beq x0, x0, width_loop
 
-	
 	prepare_outer:
 		# t2 = 3(w+1) / 4 - 2 였는데 바꿀 것! 8의 배수인지 보려고
-		andi t2, t1, 0x7f8
-		bltu x0, t2, divisible_8
+		# t2에 현재 i+1값인 t1 옮겨둠
+		addi t2, t1, 1
+		jal divisible_9
 
 		# 지금 쓸 수 있는 레지스터 t2, t3, t4, a3, a4, ra
 		# 근데 여기 for문 두 개 돌리기 전에 메모리에서 c, d 뽑아야 함
