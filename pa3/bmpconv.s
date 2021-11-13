@@ -26,8 +26,8 @@
 bmpconv:
 	# m = 0 (t0 = m)
 	addi t0, x0, 0
-	addi sp, sp, -8
-	# k와 outputptr stack에 저장
+	addi sp, sp, -4
+	# k와 outptr stack에 저장 -> 이걸 커널 계산하면서 뽑을 수 있게 해야함
 	sw a3, 0(sp)
 	sw a4, 4(sp)
 	beq x0, x0, height_loop
@@ -108,7 +108,7 @@ height_loop:
 			# t3 써도됨
 
 		width_3: 
-			# t3 = d (2)
+			# t3 = d (3)
 			addi sp, sp, -4
 			addi t3, x0, 3
 			sw t3, 0(sp)
@@ -127,7 +127,7 @@ height_loop:
 			slli t3, t2, 1
 			add t2, t3, t2
 			srli t2, t2, 2
-			addi sp, sp, 4
+			# addi sp, sp, 4
 			beq x0, x0, width_loop
 
 	
@@ -163,21 +163,23 @@ height_loop:
 
 	inner: 
 		bge t3, a3, end_inner
-		# t4 = (w+1)*3
+		# t4 = (w+1)*3 에서 하위2비트 버림  -> 총 가로 바이트 수
 		addi t4, a2, 1
 		slli ra, t4, 1
 		add t4, t4, ra
+		srli t4, t4, 2
+		slli t4, t4, 2
 		# m과 곱해줌
 
 		addi ra, x0, 0
 		addi a4, x0, 0
 		beq ra, x0, mul_m
 
-		# a4에 m*3(w+1) /4 저장
+		# a4에 j * 가로 바이트 수 저장
 		mul_m: 
-			bge t0, ra, fin_mul
+			bge ra, t2, fin_mul
 			add a4, a4, t4
-			srli a4, a4, 2 
+			# srli a4, a4, 2 
 			addi ra, ra, 1
 			beq x0, x0, mul_m
 
@@ -187,11 +189,13 @@ height_loop:
 	# 		ebreak
 
 	fin_mul:
+	# t4 = k * 4 -> 현재 칸의 가로 바이트 수
 		slli t4, t3, 2
-		slli a4, a4, 2
+	# 현재 읽어와야 할 메모리 주소 
 		add t4, t4, a4
-		# a4 사용가능
 		add t4, t4, a0
+			# a4 사용가능
+
 
 		# lw a4, 0(t4)
 
@@ -207,6 +211,7 @@ height_loop:
 		beq x0, x0, inner
 
 	end_inner:
+		# j 증가
 		addi t2, t2, 1
 		# a4 스택에 저장했던 것 다시 a4에 돌려놓고 스택에서 빼기
 		lw a4, 0(sp)
@@ -225,6 +230,7 @@ height_loop:
 	# t3 썼으면 다시 확인해라 !!!
 	# d 꺼내기 다음 i에 의해서 결정됨
 		addi sp, sp, 4
+
 		addi t2, a2, 1
 		slli t3, t2, 1
 		add t2, t3, t2
@@ -234,7 +240,8 @@ height_loop:
 		beq x0, x0, width_loop
 
 	
-	end_width: # 현재 c 꺼내기 다음 c는 다음 m에 의해서 결정됨
+	end_width: 
+		# 현재 c 꺼내기 다음 c는 다음 m에 의해서 결정됨
 		addi sp, sp, 4
 		# m = m + 3
 		addi t0, t0, 3
@@ -244,7 +251,7 @@ height_loop:
 end_height:
 
 	# k랑 outputptr 꺼내기 근데 여기가 아니라 kernal에서 해야함 사실
-	# addi sp, sp, 8 
+	addi sp, sp, 4
 	
 	addi a0, x0, 0
 	lui a0, 0x80000
