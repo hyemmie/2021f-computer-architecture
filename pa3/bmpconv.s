@@ -35,6 +35,7 @@ bmpconv:
 	beq x0, x0, height_loop
 
 height_loop: 
+# a1 잘못함 계산다시하셈 
 	bge t0, a1, end_height
 	# t1 = h-1
 	addi t1, a1, -1
@@ -125,8 +126,8 @@ height_loop:
 			beq t2, x0, divided_9
 			# 9의 배수가 아니면 계속 진행
 			blt t2, x0, prepare2_outer
-			# 계산중이면 돌아감
-			beq x0, x0, divisible_9
+			# 양수면 이어서 계산
+			blt x0, t2, divisible_9
 
 		divided_9: 
 			# i = i+1
@@ -144,7 +145,7 @@ height_loop:
 		# t2 = 3(w+1) / 4 - 2 였는데 바꿀 것! 8의 배수인지 보려고
 		# t2에 현재 i+1값인 t1 옮겨둠
 		addi t2, t1, 1
-		jal divisible_9
+		beq x0, x0, divisible_9
 
 		# 지금 쓸 수 있는 레지스터 t2, t3, t4, a3, a4, ra
 		# 근데 여기 for문 두 개 돌리기 전에 메모리에서 c, d, a4 뽑아야 함
@@ -156,7 +157,7 @@ height_loop:
 		# t2 = j = m
 		addi t2, t0, 0
 		# a4 = c + m
-		add a4, a4, t2
+		add a4, a4, t0
 		beq x0, x0, outer
 
 	outer: 
@@ -172,7 +173,6 @@ height_loop:
 		beq x0, x0, inner
 
 	inner: 
-		bge t3, a3, end_inner
 		# t4 = (w+1)*3 에서 하위2비트 버림  -> 총 가로 바이트 수
 		addi t4, a2, 1
 		slli ra, t4, 1
@@ -198,27 +198,27 @@ height_loop:
 	load_store_4byte:
 	# 쓸 수 있는 것 ra, t4, a2, a1
 	# t4 = k * 4 -> 현재 칸의 가로 바이트 수
+		bge t3, a3, end_inner
 		slli t4, t3, 2
 	# 현재 읽어와야 할 메모리 주소 
 		add t4, t4, a4
-	# a4 사용가능
 		add t4, t4, a0
+		lw ra, 0(t4)
 	# a4 스택에 저장했던 것 다시 달라진 a4에 돌려놓고 스택에서 빼기
-		lw a4, 0(sp)
+		lw t4, 0(sp)
 	# d, c 꺼내놓기
 		lw a2, 4(sp)
 		lw a1, 8(sp)
 		addi sp, sp, 12
 
 # 이미지 비트값 불러옴
-		lw ra, 0(t4)
 		addi sp, sp, -16
-		sw a4, 0(sp)
+		sw t4, 0(sp)
 		sw a2, 4(sp)
 		sw a1, 8(sp)
 		sw ra, 12(sp)
 		addi t3, t3, 1
-		beq x0, x0, inner
+		beq x0, x0, load_store_4byte
 
 	end_inner:
 		# j 증가
@@ -226,6 +226,8 @@ height_loop:
 		# a4 스택에 저장했던 것 다시 a4에 돌려놓고 스택에서 빼기
 		lw a4, 0(sp)
 		addi sp, sp, 4
+		# a3 d로 돌려놔야 함
+		lw a3, 0(sp)
 		beq x0, x0, outer
 
 	end_outer:
@@ -241,6 +243,7 @@ height_loop:
 		lw a2, 4(sp)
 		
 	# ... 커널곱 계산 끝냈다고 가정
+
 		addi a3, x0, 0
 		addi ra, x0, 0
 
@@ -249,12 +252,13 @@ height_loop:
 		addi a3, a3, 1
 		blt a3, a2, mul_cd
 
-
-	add sp, sp, a3
-
-
+	slli ra, ra, 2
+	addi ra, ra, 8
 
 
+	add sp, sp, ra
+
+	# ... 여기를 진짜 연산으로 채워야 함
 
 	# i < 3(w+1) / 4 - 1 면 돌아가기 값 t2에 넣으셈
 	# t3 썼으면 다시 확인해라 !!! -> t3는 계속 i다!
@@ -270,8 +274,8 @@ height_loop:
 	# w a2에 로드
 		lw a2, 4(sp)
 		addi t2, a2, 1
-		slli t3, t2, 1
-		add t2, t3, t2
+		slli ra, ra, 1
+		add t2, ra, t2
 		srli t2, t2, 2
 		# i = i+2
 		addi t1, t1, 2
@@ -283,13 +287,14 @@ height_loop:
 		addi sp, sp, 4
 		# m = m + 3
 		addi t0, t0, 3
+		lw a1, 4(sp)
 		beq x0, x0, height_loop
 
 
 end_height:
 
 	# k랑 outputptr 꺼내기 근데 여기가 아니라 kernal에서 해야함 사실
-	addi sp, sp, 4
+	# addi sp, sp, 4
 	
 	addi a0, x0, 0
 	lui a0, 0x80000
