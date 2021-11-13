@@ -26,10 +26,12 @@
 bmpconv:
 	# m = 0 (t0 = m)
 	addi t0, x0, 0
-	addi sp, sp, -4
+	addi sp, sp, -12
 	# k와 outptr stack에 저장 -> 이걸 커널 계산하면서 뽑을 수 있게 해야함
-	sw a3, 0(sp)
-	sw a4, 4(sp)
+	sw a2, 0(sp)
+	sw a1, 4(sp)
+	sw a3, 8(sp)
+	sw a4, 12(sp)
 	beq x0, x0, height_loop
 
 height_loop: 
@@ -145,7 +147,7 @@ height_loop:
 		jal divisible_9
 
 		# 지금 쓸 수 있는 레지스터 t2, t3, t4, a3, a4, ra
-		# 근데 여기 for문 두 개 돌리기 전에 메모리에서 c, d 뽑아야 함
+		# 근데 여기 for문 두 개 돌리기 전에 메모리에서 c, d, a4 뽑아야 함
 	prepare2_outer:
 		# a3 = d
 		lw a3, 0(sp)
@@ -185,7 +187,7 @@ height_loop:
 
 		# a4에 j * 가로 바이트 수 저장
 		mul_m: 
-			bge ra, t2, fin_mul
+			bge ra, t2, load_store_4byte
 			add a4, a4, t4
 			# srli a4, a4, 2 
 			addi ra, ra, 1
@@ -193,28 +195,28 @@ height_loop:
 
 	#t4 사용가능
 
-	# temp:
-	# 		ebreak
-
-	fin_mul:
+	load_store_4byte:
+	# 쓸 수 있는 것 ra, t4, a2, a1
 	# t4 = k * 4 -> 현재 칸의 가로 바이트 수
 		slli t4, t3, 2
 	# 현재 읽어와야 할 메모리 주소 
 		add t4, t4, a4
+	# a4 사용가능
 		add t4, t4, a0
-			# a4 사용가능
+	# a4 스택에 저장했던 것 다시 달라진 a4에 돌려놓고 스택에서 빼기
+		lw a4, 0(sp)
+	# d, c 꺼내놓기
+		lw a2, 4(sp)
+		lw a1, 8(sp)
+		addi sp, sp, 12
 
-
-		# lw a4, 0(t4)
-
-		# addi sp, sp, -4
-		# sw a4, 0(sp)
-		
-		# 여기서 outputptr과 k에 접근할 방법이 없음
-		
-		# addi ra, x0, 0
-		# beq t4, ra, temp
-
+# 이미지 비트값 불러옴
+		lw ra, 0(t4)
+		addi sp, sp, -16
+		sw a4, 0(sp)
+		sw a2, 4(sp)
+		sw a1, 8(sp)
+		sw ra, 12(sp)
 		addi t3, t3, 1
 		beq x0, x0, inner
 
@@ -231,14 +233,42 @@ height_loop:
 		beq x0, x0, kernal
 
 	kernal:
+	# 쓸 수 있는 레지스터 ra, a2, a1, a4, a3
+
+	# a1 = d
+		lw a1, 0(sp)
+	# a2 = c
+		lw a2, 4(sp)
 		
+	# ... 커널곱 계산 끝냈다고 가정
+		addi a3, x0, 0
+		addi ra, x0, 0
+
+	mul_cd: 
+		add ra, ra, a1
+		addi a3, a3, 1
+		blt a3, a2, mul_cd
 
 
-	# i <  3(w+1) / 4 - 1 면 돌아가기 값 t2에 넣으셈
-	# t3 썼으면 다시 확인해라 !!!
+	add sp, sp, a3
+
+
+
+
+
+	# i < 3(w+1) / 4 - 1 면 돌아가기 값 t2에 넣으셈
+	# t3 썼으면 다시 확인해라 !!! -> t3는 계속 i다!
+
+	# d, c 다시 넣어주기! 이미 바이트들 빠진 상태에서 sp 
+		addi sp, sp, -8
+		sw a1, 0(sp)
+		sw a2, 4(sp)
+
+
 	# d 꺼내기 다음 i에 의해서 결정됨
 		addi sp, sp, 4
-
+	# w a2에 로드
+		lw a2, 4(sp)
 		addi t2, a2, 1
 		slli t3, t2, 1
 		add t2, t3, t2
