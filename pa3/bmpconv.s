@@ -26,16 +26,15 @@
 bmpconv:
 	# m = 0 (t0 = m)
 	addi t0, x0, 0
-	addi sp, sp, -12
-	# k와 outptr stack에 저장 -> 이걸 커널 계산하면서 뽑을 수 있게 해야함
+	addi sp, sp, -16
 	sw a2, 0(sp)
 	sw a1, 4(sp)
 	sw a3, 8(sp)
 	sw a4, 12(sp)
+	sw ra, 16(sp)
 	beq x0, x0, height_loop
 
 height_loop: 
-# a1 잘못함 계산다시하셈 
 	bge t0, a1, end_height
 	# t1 = h-1
 	addi t1, a1, -1
@@ -237,49 +236,833 @@ height_loop:
 	kernal:
 	# 쓸 수 있는 레지스터 ra, a2, a1, a4, a3
 
-	# a1 = d
+		# a1 = d
 		lw a1, 0(sp)
-	# a2 = c
+		# a2 = c
 		lw a2, 4(sp)
-		
-	# ... 커널곱 계산 끝냈다고 가정
 
 		addi a3, x0, 0
 		addi ra, x0, 0
 
-	mul_cd: 
-		add ra, ra, a1
-		addi a3, a3, 1
-		blt a3, a2, mul_cd
+		mul_cd: 
+			add ra, ra, a1
+			addi a3, a3, 1
+			blt a3, a2, mul_cd
 
-	slli ra, ra, 2
-	addi ra, ra, 8
+		slli ra, ra, 2
+		addi ra, ra, 8
+		add ra, ra, sp
+
+		# # i+1 9의 배수 판별
+		addi a1, t1, 1
+		addi a3, x0, 9
+
+		check_mode: 
+			addi a1, a1, -9
+			addi a4, x0, 1
+			beq a1, a4, mode1
+			addi a4, x0, 3
+			beq a1, a4, mode2
+			addi a4, x0, 5
+			beq a1, a4, mode3
+			addi a4, x0, 7
+			beq a1, a4, mode4
+			bge a1, a3, check_mode
+
+	# ra = cd * 4
+	# a1, a2, a3, a4, t2, t3, t4
+
+		mode1:
+			andi a2, x0, 0 
+			andi a3, x0, 0 
+			andi a4, x0, 0
+
+		mode1_1: 
+			lw a1, 0(ra)
+			andi t2, a1, 0xFF
+			add a2, a2, t2
+			srli t2, a1, 24
+			add a2, a2, t2
+			slli t3, a1, 8
+			srli t3, t3, 24
+			add a3, a3, t3
+			slli t4, a1, 16
+			srli t4, t4, 24
+			add a4, a4, t4
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, mode1_4
+
+		mode1_2:
+			lw a1, -4(ra)
+			srli t3, a1, 8
+			add a3, a3, t3
+			andi t4, a1, 0xFF
+			add a4, a4, t3
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, mode1_4
+
+		mode1_3:
+			lw a1, -8(ra)
+
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
 
 
-	add sp, sp, ra
+		mode1_4:
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
 
-	# ... 여기를 진짜 연산으로 채워야 함
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, m1_4_d_is_1
+			addi t3, x0, 2
+			beq t2, t3, m1_4_d_is_2
+			lw a1, -12(ra)
+			
+		m1_4_cal:
+			andi t2, a1, 0xFF
+			sub a2, a2, t2
+			srli t3, a1, 16
+			sub a3, a3, t3
+			slli t4, a1, 16
+			srli t4, t4, 24
+			sub a4, a4, t4
 
-	# i < 3(w+1) / 4 - 1 면 돌아가기 값 t2에 넣으셈
-	# t3 썼으면 다시 확인해라 !!! -> t3는 계속 i다!
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, mode1_7
+
+		mode1_5:
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, m1_5_d_is_2
+			lw a1, -16(ra)
+
+		m1_5_cal:
+			slli t2, a1, 8
+			srli t2, t2, 24
+			sub a2, a2, t2
+			srli t4, a1, 24
+			sub a4, a4, t4
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, mode1_7
+
+		mode1_6:
+			lw a1, -20(ra)
+			andi t3, a1, 0xFF
+			sub a3, a3, t3
+
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+		mode1_7:
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, m1_7_d_is_1
+			addi t3, x0, 2
+			beq t2, t3, m1_7_d_is_2
+
+			lw a1, -24(ra)
+
+		m1_7_cal: 
+			srli t2, a1, 24
+			add a2, a2, t2
+
+		mode1_8:
+		# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+		# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, m1_8_d_is_2
+
+			lw a1, -28(ra)
+			
+		m1_8_cal: 
+			slli t2, a1, 8
+			srli t2, t2, 24
+			add a2, a2, t2
+			slli t3, a1, 16
+			srli t3, t3, 24
+			add a3, a3, t3
+			andi t4, a1, 0xFF
+			add a4, a4, t4
+			srli t4, a1, 24
+			add a4, a4, t4
+
+		mode1_9:
+			lw a1, -32(ra)
+			andi t3, a1, 0xFF
+			add a3, a3, t3
+
+		beq x0, x0, check_range
+
+
+		mode2:
+			andi a2, x0, 0 
+			andi a3, x0, 0 
+			andi a4, x0, 0
+
+		mode2_1: 
+			lw a1, 0(ra)
+			slli t2, a1, 16
+			srli t2, t2, 24
+			add a2, a2, t2
+			srli t3, a1, 24
+			add a3, a3, t3
+			slli t4, a1, 8
+			srli t4, t4, 24
+			add a4, a4, t4
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, mode2_4
+
+		mode2_2:
+			lw a1, -4(ra)
+			andi t2, a1, 0xFF
+			add a2, a2, t2
+			slli t3, a1, 8
+			srli t3, t3, 24
+			add a3, a3, t3
+			slli t4, a1, 16
+			srli t4, t4, 23
+			add a4, a4, t4
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, mode2_4
+
+		mode2_3:
+			lw a1, -8(ra)
+
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
+
+		mode2_4:
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, m2_4_d_is_1
+			addi t3, x0, 2
+			beq t2, t3, m2_4_d_is_2
+			lw a1, -12(ra)
+
+		m2_4_cal:
+			slli t2, a1, 16
+			srli t2, t2, 24
+			sub a2, a2, t2
+			srli t3, a1, 24
+			sub a3, a3, t3
+			slli t4, a1, 8
+			srli t4, t4, 24
+			sub a4, a4, t4
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, mode2_7
+
+		mode2_5:
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, m1_5_d_is_2
+			lw a1, -16(ra)
+
+		m2_5_cal:
+			srli t2, a1, 24
+			sub a2, a2, t2
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, mode2_7
+
+		mode2_6:
+			lw a1, -20(ra)
+			slli t3, a1, 16
+			srli t3, t3, 24
+			sub a3, a3, t3
+			andi t4, a1, 0xFF
+			sub a4, a4, t4
+
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+		mode2_7:
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+			# t2 = d
+			# lw t2, 0(sp)
+			# addi t3, x0, 1
+			# beq t2, t3, m2_7_d_is_1
+			# addi t3, x0, 2
+			# beq t2, t3, m2_7_d_is_2
+
+			# lw a1, -24(ra)
+
+		# m2_7_cal: 
+
+		mode2_8:
+		# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, m2_8_d_is_2
+
+			lw a1, -28(ra)
+
+		m2_8_cal: 
+			andi t2, a1, 0xFF
+			add a2, a2, t2
+			srli t2, a1, 24
+			add a2, a2, t2
+			slli t3, a1, 8
+			srli t3, t3, 24
+			add a3, a3, t3
+			slli t4, a1, 16
+			srli t4, t4, 24
+			add a4, a4, t4
+
+		mode2_9:
+			lw a1, -32(ra)
+			srli t3, a1, 8
+			add a3, a3, t3
+			andi t4, a1, 0xFF
+			add a4, a4, t3
+
+			beq x0, x0, check_range
+
+		mode3:
+			andi a2, x0, 0
+			andi a3, x0, 0
+			andi a4, x0, 0
+
+		mode3_1: 
+			lw a1, 0(ra)
+			slli t2, a1, 8
+			srli t2, t2, 24
+			add a2, a2, t2
+			srli t4, a1, 24
+			add a4, a4, t4
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, mode3_4
+
+		mode3_2:
+			lw a1, -4(ra)
+			slli t2, a1, 16
+			srli t2, t2, 24
+			add a2, a2, t2
+			andi t3, a1, 0xFF
+			add a3, a3, t3
+			srli t3, a1, 24
+			add a3, a3, t3
+			slli t4, a1, 8
+			srli t4, t4, 24
+			add a4, a4, t4
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, mode2_4
+
+		mode3_3:
+			lw a1, -8(ra)
+
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
+
+		mode3_4:
+		# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, m1_4_d_is_1
+			addi t3, x0, 2
+			beq t2, t3, m1_4_d_is_2
+			lw a1, -12(ra)
+
+		m3_4_cal:
+			slli t2, a1, 8
+			srli t2, t2, 24
+			sub a2, a2, t2
+			srli t4, a1, 24
+			sub a4, a4, t4
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, mode4_7
+
+		mode3_5:
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, m3_5_d_is_2
+			lw a1, -16(ra)
+
+		m3_5_cal:
+			andi t3, a1, 0xFF
+			sub a3, a3, t3
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, mode3_7
+
+		mode3_6:
+			lw a1, -20(ra)
+			andi t2, a1, 0xFF
+			sub a2, a2, t2
+			slli t3, a1, 8
+			srli t3, t3, 24
+			sub a3, a3, t3
+			slli t4, a1, 16
+			srli t4, t4, 24
+			sub a4, a4, t4
+
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+		mode3_7:
+			# t2 = c
+			# lw t2, 4(sp)
+			# addi t3, x0, 2
+			# beq t2, t3, check_range
+
+			# # t2 = d
+			# lw t2, 0(sp)
+			# addi t3, x0, 1
+			# beq t2, t3, m3_7_d_is_1
+			# addi t3, x0, 2
+			# beq t2, t3, m3_7_d_is_2
+
+			lw a1, -24(ra)
+
+		# m3_7_cal: 
+
+		mode3_8:
+		# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+		# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, m3_8_d_is_2
+		
+		m3_8_cal:
+			lw a1, -28(ra)
+			slli t2, a1, 16
+			srli t2, t2, 24
+			add a2, a2, t2
+			srli t3, a1, 24
+			add a3, a3, t3
+			slli t4, a1, 8
+			srli t4, t4, 24
+			add a4, a4, t4
+
+		mode3_9:
+			lw a1, -32(ra)
+			andi t2, a1, 0xFF
+			add a2, a2, t2
+			slli t3, a1, 8
+			srli t3, t3, 24
+			add a3, a3, t3
+			slli t4, a1, 16
+			srli t4, t4, 24
+			add a4, a4, t4
+
+		beq x0, x0, check_range
+
+		mode4:
+			andi a2, x0, 0
+			andi a3, x0, 0
+			andi a4, x0, 0
+
+		mode4_1: 
+			lw a1, 0(ra)
+			srli t2, a1, 24
+			add a2, a2, t2
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, mode4_4
+
+		mode4_2:
+			lw a1, -4(ra)
+			slli t2, a1, 8
+			srli t2, t2, 24
+			add a2, a2, t2
+			slli t3, a1, 16
+			srli t3, t3, 24
+			add a3, a3, t3
+			srli t4, a1, 24
+			add a4, a4, t4
+			andi t4, a1, 0xFF
+			add a4, a4, t4
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, mode2_4
+
+		mode4_3:
+			lw a1, -8(ra)
+			andi t3, a1, 0xFF
+			add a3, a3, t3
+
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
+
+		mode4_4:
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 1
+			beq t2, t3, m4_4_d_is_1
+			addi t3, x0, 2
+			beq t2, t3, m4_4_d_is_2
+			lw a1, -12(ra)
+			
+		m4_4_cal:
+			srli t2, a1, 24
+			sub a2, a2, t2
+
+		mode4_5:
+		# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 1
+			beq t2, t3, check_range
+
+			# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, m4_5_d_is_2
+			lw a1, -16(ra)
+
+		m4_5_cal:
+			slli t3, a1, 16
+			srli t3, t3, 24
+			sub a3, a3, t3
+			andi t4, a1, 0xFF
+			sub a4, a4, t4
+
+		# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, mode4_7
+
+		mode4_6:
+			lw a1, -20(ra)
+			slli t2, a1, 16
+			srli t2, t2, 24
+			sub a2, a2, t2
+			srli t3, a1, 24
+			sub a3, a3, t3
+			slli t4, a2, 8
+			srli t4, t4, 24
+			sub a4, a4, t4
+
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+		mode4_7:
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+			# t2 = d
+			# lw t2, 0(sp)
+			# addi t3, x0, 1
+			# beq t2, t3, m1_7_d_is_1
+			# addi t3, x0, 2
+			# beq t2, t3, m1_7_d_is_2
+
+			lw a1, -24(ra)
+
+		# m4_7_cal: 
+
+		mode4_8:
+			# t2 = c
+			lw t2, 4(sp)
+			addi t3, x0, 2
+			beq t2, t3, check_range
+
+		# t2 = d
+			lw t2, 0(sp)
+			addi t3, x0, 2
+			beq t2, t3, m4_8_d_is_2
+
+			lw a1, -28(ra)
+			
+		m4_8_cal: 
+			slli t2, a1, 8
+			srli t2, t2, 24
+			add a2, a2, t2
+			srli t4, a1, 24
+			add a4, a4, t4
+
+		mode4_9:
+			lw a1, -32(ra)
+			slli t2, a1, 16
+			srli t2, t2, 24
+			add a2, a2, t2
+			andi t3, a1, 0xFF
+			add a3, a3, t3
+			srli t3, a1, 24
+			add a3, a3, t3
+			slli t4, a1, 8
+			srli t4, t4, 24
+			add a4, a4, t4
+
+		beq x0, x0, check_range
+
+
+	write_output:
+		sub ra, ra, sp
+
+	# d, c 다시 불러와라
+		lw t2, 0(sp)
+		lw t3, 4(sp)
+	# c, d, bmp 바이트들 뽑기
+		add sp, sp, ra
 
 	# d, c 다시 넣어주기! 이미 바이트들 빠진 상태에서 sp 
 		addi sp, sp, -8
-		sw a1, 0(sp)
-		sw a2, 4(sp)
+		sw t2, 0(sp)
+		sw t3, 4(sp)
 
+
+	# ... 여기서 입력
+		# addi t4, x0, 0
+		# slli a2, 
+		# and t4, 
 
 	# d 꺼내기 다음 i에 의해서 결정됨
 		addi sp, sp, 4
 	# w a2에 로드
 		lw a2, 4(sp)
 		addi t2, a2, 1
-		slli ra, ra, 1
+		slli ra, t2, 1
 		add t2, ra, t2
 		srli t2, t2, 2
 		# i = i+2
 		addi t1, t1, 2
 		beq x0, x0, width_loop
+
+	check_range: 
+		blt a2, x0, neg_a2
+		addi t2, x0, 255
+		blt t2, a2, over_a2
+		blt a3, x0, neg_a3
+		blt t2, a3, over_a3
+		blt a4, x0, neg_a4
+		blt t2, a4, over_a4
+		beq x0, x0, write_output
+
+	neg_a2: 
+		addi a2, x0, 0
+		beq x0, x0, check_range
+
+	over_a2:
+		addi a2, x0, 0xFF
+		beq x0, x0, check_range
+
+	neg_a3: 
+		addi a3, x0, 0
+		beq x0, x0, check_range
+
+	over_a3:
+		addi a3, x0, 0xFF
+		beq x0, x0, check_range
+
+	neg_a4: 
+		addi a4, x0, 0
+		beq x0, x0, check_range
+
+	over_a4:
+		addi a4, x0, 0xFF
+		beq x0, x0, check_range
+
+	m1_4_d_is_1:
+		lw a1, -4(ra)
+		beq x0, x0, m1_4_cal
+
+	m1_4_d_is_2:
+		lw a1, -8(ra)
+		beq x0, x0, m1_4_cal
+
+	m1_5_d_is_2:
+		lw a1, -16(ra)
+		beq x0, x0, m1_5_cal
+
+	m1_7_d_is_1:
+		lw a1, -8(ra)
+		beq x0, x0, m1_7_cal
+
+	m1_7_d_is_2:
+		lw a1, -20(ra)
+		beq x0, x0, m1_7_cal
+
+	m1_8_d_is_2:
+		lw a1, -24(ra)
+		beq x0, x0, m1_8_cal
+
+	m2_4_d_is_1:
+		lw a1, -4(ra)
+		beq x0, x0, m2_4_cal
+
+	m2_4_d_is_2:
+		lw a1, -8(ra)
+		beq x0, x0, m2_4_cal
+
+	m2_5_d_is_2:
+		lw a1, -16(ra)
+		beq x0, x0, m2_5_cal
+
+	# m2_7_d_is_1:
+	# 	lw a1, -8(ra)
+	# 	beq x0, x0, m2_7_cal
+
+	# m2_7_d_is_2:
+	# 	lw a1, -20(ra)
+	# 	beq x0, x0, m2_7_cal
+
+	m2_8_d_is_2:
+		lw a1, -24(ra)
+		beq x0, x0, m2_8_cal
+
+	m3_4_d_is_1:
+		lw a1, -4(ra)
+		beq x0, x0, m3_4_cal
+
+	m3_4_d_is_2:
+		lw a1, -8(ra)
+		beq x0, x0, m3_4_cal
+
+	m3_5_d_is_2:
+		lw a1, -16(ra)
+		beq x0, x0, m3_5_cal
+
+	# m3_7_d_is_1:
+	# 	lw a1, -8(ra)
+	# 	beq x0, x0, m3_7_cal
+
+	# m3_7_d_is_2:
+	# 	lw a1, -20(ra)
+	# 	beq x0, x0, m3_7_cal
+
+	m3_8_d_is_2:
+		lw a1, -24(ra)
+		beq x0, x0, m3_8_cal
+
+	m4_4_d_is_1:
+		lw a1, -4(ra)
+		beq x0, x0, m4_4_cal
+
+	m4_4_d_is_2:
+		lw a1, -8(ra)
+		beq x0, x0, m4_4_cal
+
+	m4_5_d_is_2:
+		lw a1, -16(ra)
+		beq x0, x0, m4_5_cal
+
+	# m4_7_d_is_1:
+	# 	lw a1, -8(ra)
+	# 	beq x0, x0, m4_7_cal
+
+	# m4_7_d_is_2:
+	# 	lw a1, -20(ra)
+	# 	beq x0, x0, m4_7_cal
+
+	m4_8_d_is_2:
+		lw a1, -24(ra)
+		beq x0, x0, m4_8_cal
 
 	
 	end_width: 
@@ -290,14 +1073,10 @@ height_loop:
 		lw a1, 4(sp)
 		beq x0, x0, height_loop
 
+	end_height:
 
-end_height:
+		addi sp, sp, 16
+		lw ra, 0(sp)
+		jalr x0, 0(ra)
 
-	# k랑 outputptr 꺼내기 근데 여기가 아니라 kernal에서 해야함 사실
-	# addi sp, sp, 4
-	
-	addi a0, x0, 0
-	lui a0, 0x80000
-	addi a0, a0, 0x008
-	jalr ra, a0
 ret
