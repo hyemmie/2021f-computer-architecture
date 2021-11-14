@@ -22,7 +22,7 @@ AS		= $(PREFIX)as
 OBJDUMP		= $(PREFIX)objdump
 
 PYRISC		= /Users/ihyemin/Desktop/pyrisc/sim/snurisc.py      # <-- Change this line
-PYRISCOPT	= -l 1
+PYRISCOPT	= -l 2
 
 INCDIR		=
 LIBDIR		=
@@ -34,7 +34,7 @@ LDFLAGS		= -T./link.ld -nostdlib -nostartfiles
 OBJDFLAGS	= -D --section=.text --section=.data
 
 TARGET		= bmpconv
-ASRCS		= bmpconv-main.s bmpconv.s bmpconv-test.s
+ASRCS		= bmpconv-main.s bmpconv.s bmpconv-test4.s
 OBJS		= $(ASRCS:.s=.o)
 
 all: $(TARGET)
