@@ -100,6 +100,7 @@ height_loop:
 			# i = i+1
 			addi t1, t1, 1
 			# width_loop로 돌아가기 전에 t2 = 3(w+1) / 4 계산
+			lw a2, 12(sp)
 			addi t2, a2, 1
 			slli t3, t2, 1
 			add t2, t3, t2
@@ -183,13 +184,35 @@ height_loop:
 		beq x0, x0, load_store_4byte
 
 	end_inner:
+
+		# addi a4, x0, 2
+		# beq t2, a4, test
 		# j 증가
 		addi t2, t2, 1
+		# j = j+1 - m (첫 행에서도 1이 나와야 하므로)
+		sub t2, t2, t0
 		# a4 스택에 저장했던 것 다시 a4에 돌려놓고 스택에서 빼기
-		lw a4, 0(sp)
 		addi sp, sp, 4
 		# a3 d로 돌려놔야 함
 		lw a3, 0(sp)
+		addi a4, x0, 0
+		addi a2, x0, 0
+
+		# a2 width로 돌려놔야 함
+		mul_jm_d:	
+			add a2, a2, a3
+			addi a4, a4, 1
+			blt a4, t2, mul_jm_d
+
+		slli a2, a2, 2
+		add a2, a2, sp
+		addi a2, a2, 12
+		lw a2, 0(a2)
+
+		# a4 스택에 저장했던 것 다시 a4에 돌려놓고 스택에서 빼기
+		lw a4, -4(sp)
+
+		add t2, t2, t0
 		beq x0, x0, outer
 
 	end_outer:
@@ -230,11 +253,13 @@ height_loop:
 
 	# ra = cd * 4
 	# a1, a2, a3, a4, t2, t3, t4
+	# a2 blue a3 red a4 green a0 나머지 여기서는 blue
 
 		mode1:
 			andi a2, x0, 0 
 			andi a3, x0, 0 
 			andi a4, x0, 0
+			andi a0, x0, 0
 
 		mode1_1: 
 			lw a1, 0(ra)
@@ -594,11 +619,6 @@ height_loop:
 		addi sp, sp, -8
 		sw t2, 0(sp)
 		sw t3, 4(sp)
-
-
-# 여기서 a0값이 이미지주소 아님 !!!!!!!!!!!!!!
-	
-
 		sw a0, 8(sp)
 
 
@@ -710,9 +730,14 @@ height_loop:
 		addi t0, t0, 1
 		# ai에 height 로드
 		lw a1, 8(sp)
+		# a2에 width 로드
+		lw a2, 4(sp)
 		beq x0, x0, height_loop
 
 	end_height:
 		addi sp, sp, 20
 		lw ra, 0(sp)
 		ret
+
+		test:
+			ebreak
