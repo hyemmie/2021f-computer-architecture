@@ -26,13 +26,15 @@
 bmpconv:
 	# m = 0 (t0 = m)
 	addi t0, x0, 0
-	addi sp, sp, -20
+	addi sp, sp, -24
 	sw a0, 0(sp)
 	sw a2, 4(sp)
 	sw a1, 8(sp)
 	sw a3, 12(sp)
+	sw a4, 20(sp)
+	addi a4, a4, -4
 	sw a4, 16(sp)
-	sw ra, 20(sp)
+	sw ra, 24(sp)
 	beq x0, x0, height_loop
 
 height_loop: 
@@ -56,6 +58,8 @@ height_loop:
 
 	# t2 바꿀거임
 	width_loop:
+		# addi t2, x0, 1
+		# beq t1, t2, test
 		# t2 = 3(w+1) / 4 - 1면 끝
 		addi t2, t2, -1
 		bge t1, t2, end_width
@@ -64,6 +68,7 @@ height_loop:
 		beq t1, t2, width_2
 		# t1(i)이 일반적인 경우
 		blt t1, t2, width_3
+
 
 		width_2: 
 			# t3 = d (2)
@@ -184,9 +189,6 @@ height_loop:
 		beq x0, x0, load_store_4byte
 
 	end_inner:
-
-		# addi a4, x0, 2
-		# beq t2, a4, test
 		# j 증가
 		addi t2, t2, 1
 		# j = j+1 - m (첫 행에서도 1이 나와야 하므로)
@@ -240,10 +242,10 @@ height_loop:
 	# ra = cd * 4
 
 		kernal:
-			andi a2, x0, 0 
-			andi a3, x0, 0 
-			andi a4, x0, 0
-			andi a0, x0, 0
+			addi a2, x0, 0 
+			addi a3, x0, 0 
+			addi a4, x0, 0
+			addi a0, x0, 0
 
 		kernal_1: 
 			lw a1, 0(ra)
@@ -264,7 +266,8 @@ height_loop:
 			slli t2, a1, 8
 			srli t2, t2, 24
 			add a0, a0, t2
-			srli t3, a1, 8
+			slli t3, a1, 16
+			srli t3, t3, 24
 			add a3, a3, t3
 			andi t4, a1, 0xFF
 			add a4, a4, t3
@@ -289,18 +292,14 @@ height_loop:
 			sub a2, a2, t2
 			srli t2, a1, 24
 			sub a0, a0, t2
-			srli t3, a1, 16
+			slli t3, a1, 8
+			srli t3, t3, 24
 			sub a3, a3, t3
 			slli t4, a1, 16
 			srli t4, t4, 24
 			sub a4, a4, t4
 
 		kernal_5:
-			# t2 = c
-			lw t2, 4(sp)
-			addi t3, x0, 1
-			beq t2, t3, check_range
-
 			# t2 = d
 			lw t2, 0(sp)
 			addi t3, x0, 2
@@ -376,7 +375,7 @@ height_loop:
 	# d, c, imgptr 다시 불러와라
 		lw t2, 0(sp)
 		lw t3, 4(sp)
-		lw a0, 8(sp)
+		lw t4, 8(sp)
 	# c, d, imgptr, bmp 바이트들 뽑기
 		add sp, sp, ra
 
@@ -384,27 +383,96 @@ height_loop:
 		addi sp, sp, -8
 		sw t2, 0(sp)
 		sw t3, 4(sp)
-		sw a0, 8(sp)
+		sw t4, 8(sp)
 
 		# i의 3으로 나눈 나머지 판별
 		addi a1, t1, 0
-		addi a3, x0, 3
+		addi t3, x0, 3
 
 		check_mode: 
+			addi t4, x0, 0
+			beq a1, t4, mode1
+			addi t4, x0, 1
+			beq a1, t4, mode2
+			addi t4, x0, 2
+			beq a1, t4, mode3
 			addi a1, a1, -3
-			addi a4, x0, 0
-			beq a1, a4, mode1
-			addi a4, x0, 1
-			beq a1, a4, mode2
-			addi a4, x0, 2
-			beq a1, a4, mode3
-			bge a1, a3, check_mode
+			bge a1, t3, check_mode
 
 	mode1:
+	# a2 blue a3 red a4 green a0 blue
+	# 마지막인지 확인
+	# i = 3(w+1) / 4 - 2
+		slli a0, a0, 24
+		slli a4, a4, 8
+		slli a3, a3, 16
+		or a0, a0, a4
+		or a0, a0, a3
+		or a0, a0, a2
+
+	# a2 = w
+		lw a2, 12(sp)
+		addi a2, a2, 1
+		slli a3, a2, 1
+		add a2, a2, a3
+		srli a2, a2, 2
+		addi a2, a2, -2
+		beq t1, a2, mode1_1
+		beq x0, x0, store
+
+		mode1_1:
+			slli a0, a0, 8
+			srli a0, a0, 8
+			beq x0, x0, store
 
 	mode2:
+		# a2 green a3 blue a4 red a0 green
+		# d가 2인지 확인
+		slli a0, a0, 24
+		slli a4, a4, 8
+		slli a3, a3, 16
+		or a0, a0, a4
+		or a0, a0, a3
+		or a0, a0, a2
+
+		lw a2, 0(sp)
+		addi a3, x0, 2
+		beq a2, a3, mode2_1
+		beq x0, x0, store
+
+
+		mode2_1: 
+			slli a0, a0, 16
+			srli a0, a0, 16
+			beq x0, x0, store
 
 	mode3:
+		# a2 red a3 green a4 blue a0 red
+		# d가 2인지 확인
+		slli a0, a0, 24
+		slli a4, a4, 8
+		slli a3, a3, 16
+		or a0, a0, a4
+		or a0, a0, a3
+		or a0, a0, a2
+
+		lw a2, 0(sp)
+		addi a3, x0, 2
+		beq a2, a3, mode3_1
+		beq x0, x0, store
+
+		mode3_1: 
+			slli a0, a0, 24
+			srli a0, a0, 24
+			beq x0, x0, store
+
+	store: 
+		# a0가 저장할 값
+		# a2 = curr output
+		lw a2, 24(sp)
+		addi a2, a2, 4
+		sw a0, 0(a2)
+		sw a2, 24(sp)
 
 	# d 꺼내기 다음 i에 의해서 결정됨
 		addi sp, sp, 4
@@ -416,7 +484,6 @@ height_loop:
 		srli t2, t2, 2
 		# i = i+1
 		addi t1, t1, 1
-
 		beq x0, x0, width_loop
 
 	check_range: 
@@ -468,15 +535,15 @@ height_loop:
 		beq x0, x0, m1_4_cal
 
 	m1_5_d_is_2:
-		lw a1, -16(ra)
+		lw a1, -12(ra)
 		beq x0, x0, m1_5_cal
 
 	m1_7_d_is_2:
-		lw a1, -20(ra)
+		lw a1, -16(ra)
 		beq x0, x0, m1_7_cal
 
 	m1_8_d_is_2:
-		lw a1, -24(ra)
+		lw a1, -20(ra)
 		beq x0, x0, m1_8_cal
 	
 	end_width: 
@@ -491,9 +558,11 @@ height_loop:
 		beq x0, x0, height_loop
 
 	end_height:
-		addi sp, sp, 20
-		lw ra, 0(sp)
+		lw a0, 0(sp)
+		lw a2, 4(sp)
+		lw a1, 8(sp)
+		lw a3, 12(sp)
+		lw a4, 20(sp)
+		lw ra, 24(sp)
+		addi sp, sp, 24
 		ret
-
-		test:
-			ebreak
