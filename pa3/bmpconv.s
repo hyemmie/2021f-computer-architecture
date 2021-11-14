@@ -170,10 +170,8 @@ height_loop:
 	# d, c ,imgptr 꺼내놓기
 		lw a2, 4(sp)
 		lw a1, 8(sp)
-		addi sp, sp, 16
 
-# 이미지 비트값 불러옴
-		addi sp, sp, -20
+		addi sp, sp, -4
 
 		sw t4, 0(sp)
 		sw a2, 4(sp)
@@ -181,6 +179,7 @@ height_loop:
 		sw a0, 12(sp)
 		sw ra, 16(sp)
 		addi t3, t3, 1
+
 		beq x0, x0, load_store_4byte
 
 	end_inner:
@@ -194,6 +193,9 @@ height_loop:
 		beq x0, x0, outer
 
 	end_outer:
+
+	# 여기까지 동작 괜찮음 읽어오는 값 위치는 다른데 개수는 괜찮 스택 동작은 정상적
+
 	# 쓸 수 있는 레지스터 ra, a2, a1, a4, a3
 		# a1 = d
 		lw a1, 0(sp)
@@ -209,7 +211,7 @@ height_loop:
 			blt a3, a2, mul_cd
 
 		slli ra, ra, 2
-		addi ra, ra, 12
+		addi ra, ra, 8
 		add ra, ra, sp
 
 		# # i의 3으로 나눈 나머지 판별
@@ -584,15 +586,21 @@ height_loop:
 	# d, c, imgptr 다시 불러와라
 		lw t2, 0(sp)
 		lw t3, 4(sp)
-		lw a0, 12(sp)
-	# c, d, imgptr bmp 바이트들 뽑기
+		lw a0, 8(sp)
+	# c, d, imgptr, bmp 바이트들 뽑기
 		add sp, sp, ra
 
 	# d, c, imgptr 다시 넣어주기! 이미 바이트들 빠진 상태에서 sp 
-		addi sp, sp, -12
+		addi sp, sp, -8
 		sw t2, 0(sp)
 		sw t3, 4(sp)
-		sw a0, 12(sp)
+
+
+# 여기서 a0값이 이미지주소 아님 !!!!!!!!!!!!!!
+	
+
+		sw a0, 8(sp)
+
 
 
 	# ... 여기서 입력
@@ -610,7 +618,7 @@ height_loop:
 		srli t2, t2, 2
 		# i = i+1
 		addi t1, t1, 1
-		ebreak
+
 		beq x0, x0, width_loop
 
 	check_range: 
@@ -700,6 +708,7 @@ height_loop:
 		addi sp, sp, 4
 		# m = m + 1
 		addi t0, t0, 1
+		# ai에 height 로드
 		lw a1, 8(sp)
 		beq x0, x0, height_loop
 
