@@ -58,8 +58,6 @@ height_loop:
 
 	# t2 바꿀거임
 	width_loop:
-		# addi t2, x0, 1
-		# beq t1, t2, test
 		# t2 = 3(w+1) / 4 - 1면 끝
 		addi t2, t2, -1
 		bge t1, t2, end_width
@@ -270,7 +268,7 @@ height_loop:
 			srli t3, t3, 24
 			add a3, a3, t3
 			andi t4, a1, 0xFF
-			add a4, a4, t3
+			add a4, a4, t4
 
 			# t2 = d
 			lw t2, 0(sp)
@@ -487,8 +485,8 @@ height_loop:
 		beq x0, x0, width_loop
 
 	check_range: 
-		blt a2, x0, neg_a2
 		addi t2, x0, 255
+		blt a2, x0, neg_a2
 		blt t2, a2, over_a2
 		blt a3, x0, neg_a3
 		blt t2, a3, over_a3
