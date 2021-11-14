@@ -804,6 +804,13 @@ height_loop:
 		addi a1, t1, 0
 		addi t3, x0, 3
 
+		addi t4, x0, 0
+		beq a1, t4, mode1
+		addi t4, x0, 1
+		beq a1, t4, mode2
+		addi t4, x0, 2
+		beq a1, t4, mode3
+
 		check_mode: 
 			addi t4, x0, 0
 			beq a1, t4, mode1
@@ -812,11 +819,12 @@ height_loop:
 			addi t4, x0, 2
 			beq a1, t4, mode3
 			addi a1, a1, -3
-			bge a1, t3, check_mode
+
+			bge a1, x0, check_mode
 
 	mode1:
 	# a2 blue a3 red a4 green a0 blue
-	# 마지막인지 확인
+	# 마지막인지 확인, w가 4의 배수인 경우는 해당x
 	# i = 3(w+1) / 4 - 2
 		slli a0, a0, 24
 		slli a4, a4, 8
@@ -826,12 +834,17 @@ height_loop:
 		or a0, a0, a2
 
 	# a2 = w
-		lw a2, 16(sp)
+	lw a2, 16(sp)
+	andi a3, a2, 0x03
+	beq a3, x0, store
+
+	# i = 3(w+1) / 4 - 3
 		addi a2, a2, 1
 		slli a3, a2, 1
 		add a2, a2, a3
 		srli a2, a2, 2
-		addi a2, a2, -2
+		addi a2, a2, -3
+
 		beq t1, a2, mode1_1
 		beq x0, x0, store
 
@@ -851,6 +864,11 @@ height_loop:
 		or a0, a0, a2
 
 		lw a2, 0(sp)
+
+			# addi a3, x0, 4
+			# beq t1, a3, test
+
+
 		addi a3, x0, 2
 		beq a2, a3, mode2_1
 		beq x0, x0, store
