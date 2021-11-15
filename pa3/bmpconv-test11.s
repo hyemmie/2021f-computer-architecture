@@ -36,47 +36,32 @@ test1:
 	.word	0x0100ff00
 	.word	0x00000001
 	# width, height
-	.word	7
+	.word	4
 	.word	4
 	# bitmap
 	.word	0x00000000
-	.word	0xf2350000
-	.word	0xfbf235fb
-	.word	0x35000000
-  .word 0xf235fbf2
-  .word 0x000000fb
+	.word	0x00000000
+	.word	0x00000000
 
 	.word	0x00000000
-	.word	0xf2350000
-	.word	0xfa6a0afb
-	.word	0x35fa6a0a
-  .word 0x6a0afbf2
-  .word 0x000000fa
+	.word	0x00000000
+	.word	0x00000000
 
-	.word	0x35fbf235
-	.word	0xf235fbf2
-	.word	0xfbf235fb
-	.word	0x35000000
-  .word 0xf235fbf2
-  .word 0x000000fb
+	.word	0x00000000
+	.word	0x00000000
+	.word	0x00000000
 
-	.word	0x35000000
-	.word	0xf235fbf2
-	.word	0x000000fb
-	.word	0x35000000
-  .word 0x0000fbf2
-  .word 0x00000000
+	.word	0x00000000
+	.word	0x00000000
+	.word	0x00000000
 
 ans1:
-	.word	0x95fbf235
-	.word	0xff60ffff
-	.word	0x01882bfc
-  .word 0x00fdff8b
+	.word	0x00000000
+	.word	0x00000000
 
 	.word	0x00000000
-	.word	0x6a0a0000
-	.word	0xf90000fa
-  .word 0x00ffff3f
+	.word	0x00000000
+
 
 
 ans_END:

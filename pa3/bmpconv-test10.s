@@ -36,7 +36,7 @@ test1:
 	.word	0x0100ff00
 	.word	0x00000001
 	# width, height
-	.word	7
+	.word	11
 	.word	4
 	# bitmap
 	.word	0x00000000
@@ -44,6 +44,9 @@ test1:
 	.word	0xfbf235fb
 	.word	0x35000000
   .word 0xf235fbf2
+  .word 0x71f100fb
+  .word 0xf246dd35
+  .word 0xf235a06b
   .word 0x000000fb
 
 	.word	0x00000000
@@ -51,32 +54,56 @@ test1:
 	.word	0xfa6a0afb
 	.word	0x35fa6a0a
   .word 0x6a0afbf2
-  .word 0x000000fa
+  .word 0xe3370afa
+  .word 0xfa00fffe
+  .word 0xf235b154
+  .word 0x000000fb
+
+
 
 	.word	0x35fbf235
 	.word	0xf235fbf2
 	.word	0xfbf235fb
 	.word	0x35000000
   .word 0xf235fbf2
+  .word 0x005500fb
+  .word 0x00bfbb26
+  .word 0xf235c232
   .word 0x000000fb
+
+
 
 	.word	0x35000000
 	.word	0xf235fbf2
 	.word	0x000000fb
 	.word	0x35000000
   .word 0x0000fbf2
-  .word 0x00000000
+  .word 0x2a000000
+  .word 0x2acfeecc
+  .word 0xf235d300
+  .word 0x000000fb
+
+
 
 ans1:
 	.word	0x95fbf235
 	.word	0xff60ffff
 	.word	0x01882bfc
-  .word 0x00fdff8b
+  .word 0x60fdff8b
+  .word 0xff00ffff
+  .word 0xa4ff00ff
+  .word 0x00ff7b29
 
 	.word	0x00000000
 	.word	0x6a0a0000
 	.word	0xf90000fa
-  .word 0x00ffff3f
+  .word 0x0affff3f
+  .word 0x0085ff15
+  .word 0xffffffff
+  .word 0x00c598ff
+
+
+
 
 
 ans_END:
