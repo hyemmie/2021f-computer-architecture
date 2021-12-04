@@ -30,15 +30,11 @@ bmpconv:
 	sw a3, 4(sp)
 	sw a2, 8(sp)
 	sw a1, 12(sp)
-	# sw a3, 12(sp)
 	sw a4, 20(sp)
 	addi a4, a4, -4
 	sw a4, 16(sp)
 	sw ra, 24(sp)
 	beq x0, x0, height_loop
-
-	test:
-	ebreak
 
 height_loop: 
 	# m = h-2이면 루프 끝
@@ -70,7 +66,6 @@ height_loop:
 		# t1(i)이 일반적인 경우
 		blt t1, t2, width_3
 
-
 		width_2: 
 			# t3 = d (2)
 			addi sp, sp, -4
@@ -90,7 +85,7 @@ height_loop:
 			beq x0, x0, prepare_outer
 			# t3 써도됨
 		
-		# w의 4로 나눈 나머지가 3, 2일 때는 d=2칸짜리 스킵
+		# w의 4로 나눈 나머지가 3, 2일 때는 d = 2칸짜리 스킵
 		divisible_4: 
 			andi t3, t2, 0x03
 			addi t2, x0, 3
@@ -155,7 +150,6 @@ height_loop:
 		mul_m: 
 			bge ra, t2, load_store_4byte
 			add a4, a4, t4
-			# srli a4, a4, 2 
 			addi ra, ra, 1
 			beq x0, x0, mul_m
 
@@ -189,24 +183,8 @@ height_loop:
 		# kernal
 		sw a0, 16(sp)
 		sw ra, 20(sp)
-
-
-	# d, c ,imgptr, k 꺼내놓기
-		# lw a2, 4(sp)
-		# lw a1, 8(sp)
-		# lw , 12(sp)
-
-		# addi sp, sp, -4
-
-		# sw t4, 0(sp)
-		# sw a2, 4(sp)
-		# sw a1, 8(sp)
-		# sw a0, 12(sp)
-		# sw , 16(sp)
-		# sw ra, 20(sp)
 	
 		addi t3, t3, 1
-
 		beq x0, x0, load_store_4byte
 
 	end_inner:
@@ -239,15 +217,11 @@ height_loop:
 		beq x0, x0, outer
 
 	end_outer:
-
-	# 여기까지 동작 괜찮음 읽어오는 값 위치는 다른데 개수는 괜찮 스택 동작은 정상적
-
 	# 쓸 수 있는 레지스터 ra, a2, a1, a4, a3
 		# a1 = d
 		lw a1, 0(sp)
 		# a2 = c
 		lw a2, 4(sp)
-
 
 		addi a3, x0, 0
 		addi ra, x0, 0
@@ -790,7 +764,7 @@ height_loop:
 		lw t3, 4(sp)
 		lw t4, 8(sp)
 		lw a1, 12(sp)
-	# c, d, imgptr, k,  bmp 바이트들 뽑기
+	# c, d, imgptr, k, bmp 바이트들 뽑기
 		add sp, sp, ra
 
 	# d, c, imgptr 다시 넣어주기! 이미 바이트들 빠진 상태에서 sp 
@@ -811,21 +785,20 @@ height_loop:
 		addi t4, x0, 2
 		beq a1, t4, mode3
 
-		check_mode: 
-			addi t4, x0, 0
-			beq a1, t4, mode1
-			addi t4, x0, 1
-			beq a1, t4, mode2
-			addi t4, x0, 2
-			beq a1, t4, mode3
-			addi a1, a1, -3
+	check_mode: 
+		addi t4, x0, 0
+		beq a1, t4, mode1
+		addi t4, x0, 1
+		beq a1, t4, mode2
+		addi t4, x0, 2
+		beq a1, t4, mode3
+		addi a1, a1, -3
 
-			bge a1, x0, check_mode
+		bge a1, x0, check_mode
 
 	mode1:
 	# a2 blue a3 red a4 green a0 blue
 	# 마지막인지 확인, w가 4의 배수인 경우는 해당x
-	# i = 3(w+1) / 4 - 2
 		slli a0, a0, 24
 		slli a4, a4, 8
 		slli a3, a3, 16
@@ -865,14 +838,9 @@ height_loop:
 
 		lw a2, 0(sp)
 
-			# addi a3, x0, 4
-			# beq t1, a3, test
-
-
 		addi a3, x0, 2
 		beq a2, a3, mode2_1
 		beq x0, x0, store
-
 
 		mode2_1: 
 			slli a0, a0, 16
