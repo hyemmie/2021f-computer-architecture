@@ -8,3 +8,6 @@ pa2
 .vscode
 bmpconv
 link.ld
+__pycache__
+*/__pycache__
+*.py[cod]
