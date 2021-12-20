@@ -136,9 +136,25 @@ class IF(Pipe):
 
 
         # Use Pipe.cpu.ras for the return address stack
+        ras_rd = RISCV.rd(self.inst)
+        ras_rs1 = RISCV.rs1(self.inst)
+        ras_offset = RISCV.imm_i(self.inst)
+
+        ras_next = self.pcplus4
+        ras_pop = (opcode == JALR) and (ras_rd == 0) and (ras_rs1 == 1) and (ras_offset == 0)
+
+        if (opcode in [ JAL, JALR ] and (ras_rd == 1)) :
+            Pipe.cpu.ras.push(self.pcplus4)
+
+        if (ras_pop) :
+            pc_next, status = Pipe.cpu.ras.pop()
+            if (status == True):
+                ras_next = pc_next
+
 
         self.pc_next    = Pipe.EX.brjmp_target        if (Pipe.ID.reg_pc_sel == PC_BRJMP) and (EX.reg_pc < ID.reg_pc) else \
                         self.ex_pcplus4               if (Pipe.ID.reg_pc_sel == PC_BRJMP) and (EX.reg_pc > ID.reg_pc) else \
+                        ras_next                      if (ras_pop) and (ras_next != self.pcplus4)                                                 else \
                         Pipe.EX.jump_reg_target       if Pipe.ID.reg_pc_sel == PC_JALR                                else \
                         self.predict_jal             if (br_type1 == BR_J)                                            else \
                         self.predict_br             if ((br_type1 in [BR_EQ, BR_NE, BR_LT, BR_GE, BR_LTU, BR_GEU]) and (self.predict_br < self.pc)) else \
@@ -295,7 +311,7 @@ class ID(Pipe):
                                                 (EX.reg_c_br_type == BR_LT  and (not Pipe.EX.alu_out) and (self.pc < EX.reg_pc)) or        \
                                                 (EX.reg_c_br_type == BR_LTU and Pipe.EX.alu_out and (self.pc > EX.reg_pc)) or              \
                                                 (EX.reg_c_br_type == BR_LTU and (not Pipe.EX.alu_out) and (self.pc < EX.reg_pc))     else  \
-                                PC_JALR     if  EX.reg_c_br_type == BR_JR                                                            else  \
+                                PC_JALR     if  EX.reg_c_br_type == BR_JR  and (self.pc != Pipe.EX.jump_reg_target)                                                     else  \
                                 PC_4
 
 
